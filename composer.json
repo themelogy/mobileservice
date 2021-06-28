@@ -1,0 +1,25 @@
+{
+    "name": "themelogy/mobileservice",
+    "description": "Mobile Service for Laravel",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Themelogy\\MobileService\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Themelogy\\MobileService\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Themelogy\\MobileService\\MobileServiceProvider"
+            ]
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    }
+}
