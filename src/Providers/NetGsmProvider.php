@@ -5,38 +5,22 @@ namespace Themelogy\MobileService\Providers;
 use Themelogy\MobileService\Entity\Account;
 use Themelogy\MobileService\Entity\SMS;
 use GuzzleHttp\Client;
-use SimpleXMLElement;
+use Themelogy\MobileService\Extensions\SimpleXMLExtended;
 use Themelogy\MobileService\Exceptions\SendMessageException;
 
 
-class MobilDevProvider extends AbstractProvider
+class NetGsmProvider extends AbstractProvider
 {
-    private $apiURL = 'https://xmlapi.mobildev.com';
+    private $apiURL = 'https://api.netgsm.com.tr/sms/send/xml';
 
     private $errorCodes = [
-        "01" => 'One or more parameters are missing or maybe mispelled (unknown resource or action)',
-        "02" => "Not enough limit",
-        "03" => "Not enough quota",
-        "04" => "One or more parameters are missing or maybe mispelled (unknown resource or action)",
-        "405" => "The method requested on the resource does not exist.",
-        "429" => "Too Many Requests",
-        "500" => "Ouch! Something went wrong on our side and we apologize! Please contact our support team who'll be able to help you on this",
-        "503" => "The method requested on the resource does not exist.",
-        "1001" => "Generic Error",
-        "1002" => "Hatalı veya geçersiz AccountId veya Originator bilgisi",
-        "1003" => "Domain alanı boş bırakılamaz",
-        "1004" => "Hatalı veya geçersiz domain bilgisi, Lütfen domain listenizi kontrol edin.",
-        "1005" => "SMS Listesi (items) eklenmemiş",
-        "1006" => "SMS Listesinde kayıt bulunamadı",
-        "1007" => "Gönderim için eklenilen expireAt tarihlerinden birisi hatalı",
-        "1008" => "Hatalı veya geçersiz processId bilgisi",
-        "1009" => "SMS Gönderimi için hesabınızda yeterli kredi bulunmamaktadır.",
-        "9990" => "Authorization header missing",
-        "9991" => "Authorization header must be base64",
-        "9996" => "The resource with the specified ID you are trying to reach does not exist.",
-        "9997" => "One or more parameters are missing or maybe mispelled (unknown resource or action)",
-        "9998" => "You are not authorised to access this resource.",
-        "9999" => "Hatalı Kullanıcı Adı / Parola"
+        "20" => "Mesaj metninde ki problemden dolayı gönderilemediğini veya standart maksimum mesaj karakter sayısını geçtiğini ifade eder. (Standart maksimum karakter sayısı 917 dir. Eğer mesajınız türkçe karakter içeriyorsa Türkçe Karakter Hesaplama menüsunden karakter sayılarının hesaplanış şeklini görebilirsiniz.)",
+        "30" => "Geçersiz kullanıcı adı , şifre veya kullanıcınızın API erişim izninin olmadığını gösterir.Ayrıca eğer API erişiminizde IP sınırlaması yaptıysanız ve sınırladığınız ip dışında gönderim sağlıyorsanız 30 hata kodunu alırsınız. API erişim izninizi veya IP sınırlamanızı , web arayüzden; sağ üst köşede bulunan ayarlar> API işlemleri menüsunden kontrol edebilirsiniz.",
+        "40" => "Mesaj başlığınızın (gönderici adınızın) sistemde tanımlı olmadığını ifade eder. Gönderici adlarınızı API ile sorgulayarak kontrol edebilirsiniz.",
+        "50" => "Abone hesabınız ile İYS kontrollü gönderimler yapılamamaktadır.",
+        "51" => "Aboneliğinize tanımlı İYS Marka bilgisi bulunamadığını ifade eder.",
+        "70" => "Hatalı sorgulama. Gönderdiğiniz parametrelerden birisi hatalı veya zorunlu alanlardan birinin eksik olduğunu ifade eder.",
+        "85" => "Mükerrer Gönderim sınır aşımı. Aynı numaraya 1 dakika içerisinde 20'den fazla görev oluşturulamaz."
     ];
 
     /**
@@ -87,29 +71,20 @@ class MobilDevProvider extends AbstractProvider
 
     public function createSendXML(SMS $sms)
     {
-        $element = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8" ?><MainmsgBody></MainmsgBody>');
-        $element->addChild('UserName', $this->account->getUsername());
-        $element->addChild('PassWord', $this->account->getPassword());
-        $element->addChild('Action', 0);
-        $element->addChild('Mesgbody', $sms->getMessage());
-        $element->addChild('Numbers', $sms->getPhone());
-        $element->addChild('AccountId');
-        $element->addChild('Originator', $sms->getConfig('originator'));
-        $element->addChild('Blacklist', $sms->getConfig('blacklist'));
-        $element->addChild('SDate');
-        $element->addChild('EDate');
-        $element->addChild('Encoding', $sms->getConfig('encoding', 0));
-        $element->addChild('MessageType', $sms->getConfig('messageType'));
-        $element->addChild('RecipientType', $sms->getConfig('recipientType'));
-        return $element->asXML();
-    }
+        $element = new SimpleXMLExtended('<?xml version="1.0" encoding="UTF-8" ?><mainbody></mainbody>');
 
-    protected function createAuthXML()
-    {
-        $element = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8" ?><MainReportRoot></MainReportRoot>');
-        $element->addChild('UserName', $this->account->getUsername());
-        $element->addChild('PassWord', $this->account->getPassword());
-        $element->addChild('Action', 4);
+        $header = $element->addChild('header');
+        $company = $header->addChild('company', 'Netgsm');
+        $company->addAttribute("dil", "TR");
+        $header->addChild('usercode', $this->account->getUsername());
+        $header->addChild('password', $this->account->getPassword());
+        $header->addChild('type', '1:n');
+        $header->addChild('msgheader', 'ASLANLARPET');
+
+        $body = $element->addChild('body');
+        $body->addChildWithCData("msg", $sms->getMessage());
+        $body->addChild('no', '0'.$sms->getPhone());
+
         return $element->asXML();
     }
 
