@@ -83,7 +83,7 @@ class NetGsmProvider extends AbstractProvider
 
         $body = $element->addChild('body');
         $body->addChildWithCData("msg", $sms->getMessage());
-        $body->addChild('no', '0'.$sms->getPhone());
+        $body->addChild('no', $sms->getPhone());
 
         return $element->asXML();
     }
